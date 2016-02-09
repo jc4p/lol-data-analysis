@@ -66,11 +66,11 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
             if not cache_ignore:
                 this_player = redis.hget('player_matches', "{}_{}".format(player['id'], champ['id']))
                 if this_player:
-                    print "CACHE HIT - {}'s {} matches".format(player['name'], champ['name'])
+                    print u"CACHE HIT - {}'s {} matches".format(player['name'], champ['name'])
                     matches += this_player
                     continue
 
-            print "NETWORK - {}'s {} matches".format(player['name'], champ['name'])
+            print u"NETWORK - {}'s {} matches".format(player['name'], champ['name'])
 
             this_player = []
             page = riot.get_match_list(player['id'], region=region, champion_ids=champ['id'], ranked_queues='TEAM_BUILDER_DRAFT_RANKED_5x5', begin_time=last_week)
@@ -85,7 +85,7 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
                 if len(this_player) == page['totalGames']:
                     break
                 time.sleep(1)
-                print "NETWORK INNER - {}'s {} matches".format(player['name'], champ['name'])
+                print u"NETWORK INNER - {}'s {} matches".format(player['name'], champ['name'])
                 page = riot.get_match_list(player['id'], region=region, champion_ids=champ['id'], ranked_queues='TEAM_BUILDER_DRAFT_RANKED_5x5', begin_time=last_week, begin_index=page['endIndex'])
             if this_player:
                 redis.hset('player_matches', "{}_{}".format(player['id'], champ['id']), json.dumps(this_player))
