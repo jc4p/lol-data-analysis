@@ -81,7 +81,7 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
                         pprint(m)
                         continue
                     if m['champion'] == champ['id']:
-                        this_player.append({'lane': m['lane'], 'matchId': m['matchId'], 'region': m['region'], 'role': m['role']]})
+                        this_player.append({'lane': m['lane'], 'matchId': m['matchId'], 'region': m['region'], 'role': m['role']})
                 if len(this_player) == page['totalGames']:
                     break
                 time.sleep(1)
