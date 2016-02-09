@@ -1,0 +1,2 @@
+requests==2.9.1
+-e git://github.com/pseudonym117/Riot-Watcher.git@4d244246a02aa18af4f333fa34fcd02506f088d5#egg=riotwatcher
