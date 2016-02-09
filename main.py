@@ -60,7 +60,7 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
 
     matches = []
 
-    last_week = int(time.mktime(begin_time.timetuple()))
+    last_week = int(time.mktime(begin_time.timetuple())) * 1000
     for region in players.keys():
         for player in players[region]:
             if not cache_ignore:
@@ -73,9 +73,10 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
             print "NETWORK - {}'s {} matches".format(player['name'], champ['name'])
 
             this_player = []
-            page = riot.get_match_list(player['id'], region=region, champion_ids=champ['id'], begin_time=last_week)
+            page = riot.get_match_list(player['id'], region=region, champion_ids=champ['id'], ranked_queues='TEAM_BUILDER_DRAFT_RANKED_5x5', begin_time=last_week)
             while 'matches' in page.keys() and page['matches']:
                 for m in page['matches']:
+                    pprint(m)
                     if 'lane' not in m.keys():
                         print "Found a mysterious match list item:"
                         pprint(m)
@@ -85,7 +86,7 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
                     break
                 time.sleep(1)
                 print "NETWORK INNER - {}'s {} matches".format(player['name'], champ['name'])
-                page = riot.get_match_list(player['id'], region=region, champion_ids=champ['id'], begin_time=last_week, begin_index=page['endIndex'])
+                page = riot.get_match_list(player['id'], region=region, champion_ids=champ['id'], ranked_queues='TEAM_BUILDER_DRAFT_RANKED_5x5', begin_time=last_week, begin_index=page['endIndex'])
             if this_player:
                 redis.hset('player_matches', "{}_{}".format(player['id'], champ['id']), json.dumps(this_player))
                 matches += this_player
