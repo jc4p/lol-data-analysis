@@ -1,5 +1,6 @@
 from riotwatcher import RiotWatcher, NORTH_AMERICA, KOREA, EUROPE_WEST
 from datetime import datetime, timedelta
+from little_pger import LittlePGer
 from pprint import pprint
 import json
 import redis
@@ -12,6 +13,7 @@ if REDIS_URL:
 else:
     redis = redis.StrictRedis(host='localhost', port=6379, db=0)
 
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
 RIOT_API_KEY = os.environ.get('RIOT_API_KEY', '')
 riot = RiotWatcher(RIOT_API_KEY)
 
@@ -54,9 +56,15 @@ def get_players(cache_ignore=False):
 
 def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - timedelta(weeks=1), cache_ignore=False):
     if not cache_ignore:
-        matches = redis.hget('matches', champ['id'])
-        if matches:
-            return json.loads(matches)
+        keys = redis.hkeys('player_matches')
+        if keys:
+            champ_keys = [x for x in keys if "_{}".format(champ['id']) in x]
+            if len(champ_keys) > 10:
+                matches = []
+                for k,v in redis.hscan_iter('player_matches', '*_{}'.format(champ['id'])):
+                    if v:
+                        matches += json.loads(v)
+                return matches
 
     matches = []
 
@@ -89,10 +97,45 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
                 matches += this_player
             time.sleep(2)
 
-    if matches:
-        redis.hset('matches', champ['id'], json.dumps(matches))
-
     return matches
+
+
+# def create_tables():
+    # with LittlePGer(conn=DATABASE_URL) as pg:
+    #     pg.cursor.execute("CREATE TABLE IF NOT EXISTS matches;")
+
+
+def save_matches_info(matches, champ):
+    all_items = []
+    for m in matches[:5]:
+        match = redis.hget('match_infos', '{}_{}'.format(m['region'], m['matchId']))
+        if match:
+            match = json.loads(match)
+        else:
+            match = riot.get_match(m['matchId'], region=m['region'].lower(), include_timeline=True)
+            redis.hset('match_infos', '{}_{}'.format(m['region'], m['matchId']), json.dumps(match))
+        participantId = None
+        for p in match['participants']:
+            if p['championId'] == champ['id']:
+                participantId = p['participantId']
+                break
+        if not participantId:
+            print "Uhh no {} in this {}/{}".format(champ['name'], m['region'], m['matchId'])
+            return
+
+        items = []
+        for e in match['timeline']['frames']:
+            if 'events' not in e.keys():
+                continue
+            for ev in e['events']:
+                if ev['eventType'] == 'ITEM_PURCHASED' and ev['participantId'] == participantId:
+                    # I don't care about biscuits or health potions or wards or trinkets
+                    if ev['itemId'] in (2003, 2010, 2043, 3340, 3341, 3361, 3362, 3363, 3364):
+                        continue
+                    items.append(ev['itemId'])
+        all_items.append(items)
+    return all_items
+
 
 if __name__ == "__main__":
     champions, items = get_static()
@@ -101,4 +144,8 @@ if __name__ == "__main__":
 
     matches = get_matches_for_champion(players, champions['Viktor'])
     print "Got {} Viktor matches".format(len(matches))
-    print matches[0]
+    # create_tables()
+    items_bought = save_matches_info(matches, champions['Viktor'])
+    for game in items_bought:
+        print " > ".join([items[str(x)]['name'] for x in game])
+        print ""
