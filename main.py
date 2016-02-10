@@ -76,12 +76,9 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
             page = riot.get_match_list(player['id'], region=region, champion_ids=champ['id'], ranked_queues='TEAM_BUILDER_DRAFT_RANKED_5x5', begin_time=last_week)
             while 'matches' in page.keys() and page['matches']:
                 for m in page['matches']:
-                    if 'lane' not in m.keys():
-                        print "Found a mysterious match list item:"
-                        pprint(m)
+                    if m['champion'] != champ['id'] or m['queue'] == 'CUSTOM':
                         continue
-                    if m['champion'] == champ['id']:
-                        this_player.append({'lane': m['lane'], 'matchId': m['matchId'], 'region': m['region'], 'role': m['role']})
+                    this_player.append({'lane': m['lane'], 'matchId': m['matchId'], 'region': m['region'], 'role': m['role']})
                 if len(this_player) == page['totalGames']:
                     break
                 time.sleep(1)
