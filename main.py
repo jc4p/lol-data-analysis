@@ -110,6 +110,8 @@ def get_matches_for_champion(players, champ, begin_time=datetime.utcnow() - time
 
 def save_matches_info(matches, champ):
     for m in matches:
+        if "{}_{}_{}".format(m['region'], m['matchId'], champ['id']) in redis.hkeys('match_details'):
+            continue
         match = redis.hget('match_infos', '{}_{}'.format(m['region'], m['matchId']))
         if match:
             match = json.loads(match)
