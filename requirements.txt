@@ -3,3 +3,4 @@ redis==2.10.5
 requests==2.9.1
 -e git://github.com/pseudonym117/Riot-Watcher.git@master#egg=riotwatcher-master
 wsgiref==0.1.2
+little_pger==0.65
